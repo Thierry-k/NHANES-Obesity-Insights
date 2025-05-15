@@ -1,0 +1,154 @@
+---
+title: "Does Physical Activity Reduce the Likelihood of Obesity?"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(broom)
+library(ggplot2)
+library(aplore3)
+library(pROC)
+library(knitr)
+library(kableExtra)
+```
+
+## Introduction
+
+In this analysis, I use data from the NHANES dataset in the aplore3 R package to explore whether physical activity is associated with reduced likelihood of obesity, defined as BMI \> 35. I approach the problem using both **contingency tables** for descriptive analysis and **logistic regression** for inferential modeling.
+
+## Data Preparation
+
+```{r load-and-clean-data}
+# Convert the obesity flag to binary (1 = Obese, 0 = Not Obese)
+df <- nhanes %>%
+  mutate(obese = ifelse(as.character(obese) == "Yes", 1, 0)) # Recode for logistic regression
+
+# Remove rows with missing values
+df <- nhanes %>%
+  drop_na()  # Remove rows with missing values
+
+# View structure
+str(df)
+```
+
+## Descriptive Analysis: Contingency Tables
+
+```{r contingency-tables, results='markup'}
+
+# Activity variables and labels
+activity_vars <- c("vigwrk", "modwrk", "wlkbik", "vigrecexr", "modrecexr")
+activity_labels <- c(
+  "Vigorous Work Activity",
+  "Moderate Work Activity",
+  "Walk or Bike Activity",
+  "Vigorous Recreational Activity",
+  "Moderate Recreational Activity"
+)
+
+# Loop through each activity
+
+# Row Proportion Function
+calculate_row_props <- function(tbl) {
+  row_props <-addmargins(prop.table(tbl, margin = 1), margin = 2)
+  return(round(row_props, 2))
+}
+
+for (i in seq_along(activity_vars)) {
+  var <- activity_vars[i]
+  label <- activity_labels[i]
+
+  # Create contingency
+
+  # Create contingency table
+  tbl <- table(Obesity = df$obese, Activity = df[[var]])
+  tbl_margins <- addmargins(tbl, margin = 2)
+  row_props <- calculate_row_props(tbl)
+
+  # Print table and row proportions
+  print(kable(tbl_margins, caption = paste(label)))
+  print(kable(row_props, caption = paste("Row Proportions")))
+ table
+  df$obese <- factor(df$obese, labels = c("Not Obese", "Obese"))
+
+  # Chi-squared test
+  print(test <- chisq.test(tbl))
+}
+```
+
+## How to Interpret Results
+
+For each test:
+
+If the p-value \< 0.05, there’s evidence that the level of physical activity is associated with obesity status.
+
+If the p-value ≥ 0.05, you do not have enough evidence to conclude an association.
+
+The proportion tables help you understand how the risk of obesity differs between active and inactive groups.
+
+## Visualization
+
+```{r eda}
+# Bar plot of obesity by physical activity (vigorous recreational activities)
+ggplot(df, aes(x = factor(vigrecexr), fill = factor(obese))) +
+  geom_bar(position = "fill") +
+  labs(title = "Proportion Obese by Vigorous Recreational Activities", x = "Vigorous Recreational Activities", y = "Proportion", fill = "Obese")
+
+# Boxplot of sedentary minutes by obesity
+ggplot(df, aes(x = factor(obese), y = sedmin)) +
+  geom_boxplot() +
+  labs(title = "Sedentary Minutes per Week by Obesity Status", x = "Obese", y = "Sedentary Minutes")
+```
+
+## Logistic Regression Analysis
+
+```{r model-fit}
+# Fit the logistic regression model
+model <- glm(obese ~ vigwrk + modwrk + wlkbik + vigrecexr + modrecexr + sedmin,
+             data = df, family = binomial())
+
+# Summary of the model
+summary(model)
+
+# Tidy results with odds ratios and confidence intervals
+tidy(model, exponentiate = TRUE, conf.int = TRUE)
+```
+
+### Interpretation
+
+The logistic regression results provide odds ratios for each predictor. Variables with odds ratio less than 1 are associated with lower likelihood of obesity, while those with odds ratio greater than 1 indicate increased odds of being obese.
+
+Significant predictors (p \< 0.05) suggest a statistically reliable relationship between the predictor and obesity status.
+
+## Subgroup Analysis: Sedentary Time and Obesity by Age Group
+
+I investigate whether the association between sedentary time and obesity differs between younger and older adults. I define two age groups: under 50 and 50 or older.
+
+```{r subgroup-analysis}
+# Create age groups
+df <- df %>%
+  mutate(age_group = ifelse(age >= 50, "50_and_over", "Under_50"))
+
+# Subset data
+younger <- df %>% filter(age_group == "Under_50")
+older <- df %>% filter(age_group == "50_and_over")
+
+# Fit separate logistic regression models
+model_younger <- glm(obese ~ sedmin, data = younger, family = binomial())
+model_older <- glm(obese ~ sedmin, data = older, family = binomial())
+
+# Summarize and compare odds ratios
+broom::tidy(model_younger, exponentiate = TRUE, conf.int = TRUE)
+broom::tidy(model_older, exponentiate = TRUE, conf.int = TRUE)
+```
+
+### Subgroup Interpretation
+
+By fitting separate models for each age group, we can compare whether sedentary time has a stronger association with obesity in older adults compared to younger ones. Higher odds ratios in the older group would suggest a stronger link.
+
+This kind of analysis helps identify **effect modification**, where the strength of association varies by subgroup.
+
+## Conclusion
+
+This project combines descriptive and inferential tools to understand the link between physical activity and obesity. A dual approach like this ensures both pattern recognition and statistical rigor.
