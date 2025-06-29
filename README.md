@@ -4,7 +4,7 @@ These projects use data from the National Health and Nutrition Examination Surve
 
 ---
 
-### 🔍 Project 1: Does Physical Activity Reduce the Likelihood of Obesity?
+### Project 1: Does Physical Activity Reduce the Likelihood of Obesity?
 
 This analysis investigates whether engaging in physical activity—such as vigorous or moderate work, recreational activities, or walking/biking—is associated with a lower likelihood of being obese.
 
@@ -16,7 +16,7 @@ This analysis investigates whether engaging in physical activity—such as vigor
 
 ---
 
-### 📉 Project 2: Does Physical Activity Differ Across Marital Statuses?
+### Project 2: Does Physical Activity Differ Across Marital Statuses?
 
 This project examines how levels of physical activity vary across different marital status groups, providing insight into behavioral differences by relationship status.
 
@@ -28,7 +28,7 @@ This project examines how levels of physical activity vary across different mari
 
 ---
 
-### 🤖 Project 3: Predicting Obesity Based on Health and Lifestyle Data
+### Project 3: Predicting Obesity Based on Health and Lifestyle Data
 
 A classification model is built to predict whether an individual is obese based on variables such as physical activity, smoking status, alcohol use, general health, and demographics.
 
